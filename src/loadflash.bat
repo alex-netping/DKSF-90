@@ -1,0 +1,1 @@
+"c:\Program Files (x86)\SEGGER\Jlink_V492\Jlink.exe" -commanderscript dkst90.jlink

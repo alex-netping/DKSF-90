@@ -1,0 +1,4 @@
+device STM32F030F4
+erase
+loadbin bin_output\dkst910.bin, 0x08000000
+q
