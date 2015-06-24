@@ -6,7 +6,15 @@ echo "Building DKST-90..."
 
 arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Wall -ffunction-sections -g -O0 -c -DSTM32F030F4P6 -DSTM32F030X6 -Icmsis_boot -Icmsis_core flash.c
 arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Wall -ffunction-sections -g -O0 -c -DSTM32F030F4P6 -DSTM32F030X6 -Icmsis_boot -Icmsis_core crc.c
+
+IF "%~1"=="-generator" goto compile_for_generator
 arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Wall -ffunction-sections -g -O0 -c -DSTM32F030F4P6 -DSTM32F030X6 -Icmsis_boot -Icmsis_core main.c
+goto compile_main_done
+
+:compile_for_generator
+arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Wall -ffunction-sections -g -O0 -c -DSTM32F030F4P6 -DSTM32F030X6 -DDKST910_GENERATOR -Icmsis_boot -Icmsis_core main.c
+
+:compile_main_done:
 arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Wall -ffunction-sections -g -O0 -c -DSTM32F030F4P6 -DSTM32F030X6 cmsis_boot/startup/startup_stm32f0xx.s
 arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Wall -ffunction-sections -g -O0 -c -DSTM32F030F4P6 -DSTM32F030X6 -Icmsis_core cmsis_boot/system_stm32f0xx_temp.c
 

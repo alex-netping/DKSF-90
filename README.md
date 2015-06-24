@@ -10,9 +10,15 @@ Folder structure:
 Building the firmware
 =====================
 1. If not already installed, install GNU gcc arm toolchain localed at folder /tools/gcc-arm-none-eabi-4_8-2014q3-20140805-win32.exe
-During the installation the path to the bin folder of the toolchain should get added to the Windows system PATH
+At the end of installation at the last page of the UI installer, make sure to click the checkbox "Add environment path"
+The path to the bin folder of the toolchain then gets added to the Windows system PATH
 
 2. Change to /src/ folder and run batch file build.bat
+- Building for generator modified boards:
+build.bat -generator
+
+- Building for production 220V boards:
+build.bat
 
 3. The build results in two output files for the flash programmer, both found in /src/bin_output folder
 dkst910.hex - hex output file

@@ -7,6 +7,7 @@
 
 // To build the code for the "Waveform generator" boards uncomment #define DKST910_GENERATOR
 // If #define DKST910_GENERATOR is commented out, the build is for Live 220V device
+// This define can also be passed using gcc switch -D
 //#define DKST910_GENERATOR
 
 #define DKSF_VER_MAJOR			90
