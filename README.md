@@ -24,6 +24,28 @@ build.bat
 dkst910.hex - hex output file
 dkst910.bin - binary output file
 
+Hardware Connection
+===================
+Firmware binary file in /src/bin_output is downladed into DKST 910.5-01 mcu flash using JetLink8 USB debugger.
+SWD interface cable from the debugger connects into DKST 910.5-01 socket J3.
+JetLink8 to DKST 910.5-01 J3 cable pin out is as follows (J3 Pin 1 marked by white arrow on the PCB):
+
+Board J3 <====> Jetlink8
+------------------------
+3 <--> 7
+4 <--> 9
+6 <--> 15
+7 <--> 1
+8 <--> 4
+
+See more info on the pinout here:
+http://otladka.com.ua/wiki/doku.php?id=jetlink_3_5_6_7_8_pro_ultra_flash           
+
+Connection order is as follows:
+1. Connect target power +5V: Connect 1Wire RJ11 cable from the DKST 910.5-01 J4 socket into the host 1Wire socket, power up the host board
+2. Connect Jetlink8 USB cable into the PC.
+3. Go to next section (Downloading firmware binary to flash)
+
 Downloading firmware binary to flash
 ====================================
 1. If not already installed, install SEGGER J-Link V4.92 software suite located at /tools/Setup_JLink_V492.exe
