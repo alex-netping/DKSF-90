@@ -107,6 +107,9 @@ typedef enum
 	OW_ST_RESET,						// Wait rising edge - end of reset
 	OW_ST_PRES_START,					// Wait before generating presence pulse
 	OW_ST_PRES_HOLD,					// Holding line down until end of presence pulse
+
+	OW_ST_PRES_HOLD_END,
+	
 	OW_ST_RD_TIMESLOT,					// Wait falling edge - start of read timeslot
 	OW_ST_RD_SAMPLE,					// Wait before sampling the line
 	OW_ST_WR_TIMESLOT,					// Wait falling edge - start of write timeslot

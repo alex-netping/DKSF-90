@@ -64,7 +64,6 @@ static void delayMicroseconds(uint16_t delay_us)
 	uint16_t usecStartVal, usecCurrVal;
 	uint16_t usecDiff = 0;
 
-	// tmp hack am
 	// Overhead of this function is ~10 usec
 	delay_us -= 10;
 
@@ -644,13 +643,14 @@ stopRomSearch:
 		ow_readSampleState = OW_ST_RD_SAMPLE;
 		owCmdState = OW_CMDST_ROM;
 
-		EXTI->RTSR &= ~0x00000400;	// disable rising edge
-		NVIC_EnableIRQ(EXTI4_15_IRQn);
+		ow_state = OW_ST_PRES_HOLD_END;
 
-		ow_state = OW_ST_RD_TIMESLOT;
+		//EXTI->RTSR &= ~0x00000400;	// disable rising edge
+		NVIC_EnableIRQ(EXTI4_15_IRQn);
 
 		// Release data line (completes presence pulse)
 		GPIOA->MODER &= ~0x00140000;	// configure PA9,10 as input
+
 		break;	
 	}
 }
@@ -736,6 +736,11 @@ void EXTI4_15_IRQHandler(void)
 
 			// to send '1' allow the line to return high (by not doing anything)
 			ow_state = ow_writeEndState;
+			break;
+
+		case OW_ST_PRES_HOLD_END:			
+			EXTI->RTSR &= ~0x00000400;	// disable rising edge			
+			ow_state = OW_ST_RD_TIMESLOT;
 			break;
 		}		
 	}	
