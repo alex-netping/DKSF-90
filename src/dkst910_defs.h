@@ -203,12 +203,12 @@ typedef struct
 
 #define DKST910_DEF_PROF1_UNDERVOLTAGE			160		// ~30% below nominal 230V 
 #define DKST910_DEF_PROF1_OVERVOLTAGE			300		// ~30% above nominal 230V 
-#define DKST910_DEF_PROF1_MIN					10		// duration
-#define DKST910_DEF_PROF1_MAX					20		// duration
+#define DKST910_DEF_PROF1_MIN					25		// duration
+#define DKST910_DEF_PROF1_MAX					35		// duration
 
 #define DKST910_DEF_PROF2_UNDERVOLTAGE			207		// 10% below nominal 230V 
 #define DKST910_DEF_PROF2_OVERVOLTAGE			253		// 10% above nominal 230V
-#define DKST910_DEF_PROF2_MIN					21
+#define DKST910_DEF_PROF2_MIN					36
 #define DKST910_DEF_PROF2_MAX					65000
 #define DKST910_DEF_BLKOUT_TRES					240
 
