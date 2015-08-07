@@ -7,7 +7,6 @@
 
 // To build the code for the "Waveform generator" boards uncomment #define DKST910_GENERATOR
 // If #define DKST910_GENERATOR is commented out, the build is for Live 220V device
-// This define can also be passed using gcc switch -D
 //#define DKST910_GENERATOR
 
 #define DKSF_VER_MAJOR			90
@@ -103,13 +102,7 @@
 
 typedef enum
 {
-	OW_ST_IDLE,							// Wait falling edge - start of reset
-	OW_ST_RESET,						// Wait rising edge - end of reset
-	OW_ST_PRES_START,					// Wait before generating presence pulse
-	OW_ST_PRES_HOLD,					// Holding line down until end of presence pulse
-
-	OW_ST_PRES_HOLD_END,
-	
+	OW_ST_IDLE,							// Wait falling edge - start of reset	
 	OW_ST_RD_TIMESLOT,					// Wait falling edge - start of read timeslot
 	OW_ST_RD_SAMPLE,					// Wait before sampling the line
 	OW_ST_WR_TIMESLOT,					// Wait falling edge - start of write timeslot
@@ -203,12 +196,12 @@ typedef struct
 
 #define DKST910_DEF_PROF1_UNDERVOLTAGE			160		// ~30% below nominal 230V 
 #define DKST910_DEF_PROF1_OVERVOLTAGE			300		// ~30% above nominal 230V 
-#define DKST910_DEF_PROF1_MIN					25		// duration
-#define DKST910_DEF_PROF1_MAX					35		// duration
+#define DKST910_DEF_PROF1_MIN					10		// duration
+#define DKST910_DEF_PROF1_MAX					20		// duration
 
 #define DKST910_DEF_PROF2_UNDERVOLTAGE			207		// 10% below nominal 230V 
 #define DKST910_DEF_PROF2_OVERVOLTAGE			253		// 10% above nominal 230V
-#define DKST910_DEF_PROF2_MIN					36
+#define DKST910_DEF_PROF2_MIN					21
 #define DKST910_DEF_PROF2_MAX					65000
 #define DKST910_DEF_BLKOUT_TRES					240
 

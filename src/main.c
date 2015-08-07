@@ -28,7 +28,6 @@ volatile int ow_state = OW_ST_IDLE;
 volatile int ow_writeEndState = OW_ST_WR_END;
 volatile int ow_readSampleState = OW_ST_RD_SAMPLE;
 volatile int owCmdState = OW_CMDST_ROM;
-static uint16_t ow_start_usec = 0;
 volatile int ow_bitCount = 0;
 volatile int ow_byteCount = 0;
 volatile unsigned char ow_curByte;
@@ -73,6 +72,20 @@ static void delayMicroseconds(uint16_t delay_us)
 		usecCurrVal = TIM3->CNT;
 		usecDiff = (usecCurrVal - usecStartVal);
 	}
+}
+
+__STATIC_INLINE void delayUs(uint16_t delay_us)
+{
+	TIM3->CNT = 0;				
+	TIM3->ARR = delay_us;		
+	TIM3->DIER = 0x0000;
+	TIM3->SR = 0;				
+	TIM3->CR1 |= TIM_CR1_CEN;	
+
+ 	while (!(TIM3->SR & 0x0001))
+		;
+
+	TIM3->CR1 &= ~TIM_CR1_CEN;
 }
 
 // Configure GPIO
@@ -158,15 +171,8 @@ void TIM3_IRQHandler(void)
 				// if ROM code fully sent (8 bytes, 64 bits)
 				if (ow_byteCount == 8)
 				{
-					EXTI->RTSR |= 0x00000400;	// enable rising edge (falling edge already on)
 					ow_state = OW_ST_IDLE;
-
-					RCC->APB1RSTR |= RCC_APB1RSTR_TIM3RST;
-					RCC->APB1RSTR &= ~RCC_APB1RSTR_TIM3RST;
-					TIM3->PSC = 7;
-					TIM3->CR1 |= TIM_CR1_CEN;
-					
-					opFlags = F_MEASURMENT_ALLOWED;					
+					opFlags = F_MEASURMENT_ALLOWED;
 				}
 				// If ROM code not fully sent, move to sending next bit of the next byte
 				else
@@ -195,14 +201,7 @@ void TIM3_IRQHandler(void)
 					break;
 				}
 
-				EXTI->RTSR |= 0x00000400;	// enable rising edge (falling edge already on)
 				ow_state = OW_ST_IDLE;
-
-				RCC->APB1RSTR |= RCC_APB1RSTR_TIM3RST;
-				RCC->APB1RSTR &= ~RCC_APB1RSTR_TIM3RST;
-				TIM3->PSC = 7;
-				TIM3->CR1 |= TIM_CR1_CEN;
-
 				opFlags &= ~F_MEASURMENT_RUNNING;
 				opFlags |= F_MEASURMENT_ALLOWED;	
 			}
@@ -244,16 +243,7 @@ void TIM3_IRQHandler(void)
 
 		if (ow_byteCount == 2)
 		{
-			EXTI->RTSR |= 0x00000400;	// enable rising edge (falling edge already on)
 			ow_state = OW_ST_IDLE;
-
-			// Restart timer counter in free running mode
-			// Reset and re-init general purpose timer TIM3
-			RCC->APB1RSTR |= RCC_APB1RSTR_TIM3RST;
-			RCC->APB1RSTR &= ~RCC_APB1RSTR_TIM3RST;
-			TIM3->PSC = 7;
-			TIM3->CR1 |= TIM_CR1_CEN;
-
 			opFlags = F_MEASURMENT_ALLOWED;
 		}
 		else
@@ -325,7 +315,6 @@ void TIM3_IRQHandler(void)
 				// unsupported opcode, back to idle state
 				else
 				{
-					EXTI->RTSR |= 0x00000400;	// enable rising edge (falling edge already on)
 					ow_state = OW_ST_IDLE;
 					opFlags = F_MEASURMENT_ALLOWED;
 					break;						
@@ -482,14 +471,7 @@ void TIM3_IRQHandler(void)
 					
 				// unsupported ROM command, back to idle state
 				default:
-					EXTI->RTSR |= 0x00000400;	// enable rising edge (falling edge already on)
-					ow_state = OW_ST_IDLE;
-
-					RCC->APB1RSTR |= RCC_APB1RSTR_TIM3RST;
-					RCC->APB1RSTR &= ~RCC_APB1RSTR_TIM3RST;
-					TIM3->PSC = 7;
-					TIM3->CR1 |= TIM_CR1_CEN;
-					
+					ow_state = OW_ST_IDLE;					
 					opFlags = F_MEASURMENT_ALLOWED;
 					break;
 				}
@@ -509,14 +491,7 @@ void TIM3_IRQHandler(void)
 
 		if ((ow_curByte & 0x01) != owData)
 		{
-			EXTI->RTSR |= 0x00000400;	// enable rising edge (falling edge already on)
 			ow_state = OW_ST_IDLE;
-
-			RCC->APB1RSTR |= RCC_APB1RSTR_TIM3RST;
-			RCC->APB1RSTR &= ~RCC_APB1RSTR_TIM3RST;
-			TIM3->PSC = 7;
-			TIM3->CR1 |= TIM_CR1_CEN;
-			
 			opFlags = F_MEASURMENT_ALLOWED;
 			break;
 		}
@@ -576,14 +551,7 @@ void TIM3_IRQHandler(void)
 		}
 		
 stopRomSearch:		
-		EXTI->RTSR |= 0x00000400;	// enable rising edge (falling edge already on)
 		ow_state = OW_ST_IDLE;
-
-		RCC->APB1RSTR |= RCC_APB1RSTR_TIM3RST;
-		RCC->APB1RSTR &= ~RCC_APB1RSTR_TIM3RST;
-		TIM3->PSC = 7;
-		TIM3->CR1 |= TIM_CR1_CEN;
-		
 		opFlags = F_MEASURMENT_ALLOWED;
 		break;
 
@@ -619,39 +587,7 @@ stopRomSearch:
 		TIM3->CR1 &= ~TIM_CR1_CEN;
 
 		ow_state = OW_ST_RD_TIMESLOT;
-		break;
-		
-	case OW_ST_PRES_START:
-		// disable GPIO IRQ (to avoid falling edge trigger from our own pulse)
-		NVIC_DisableIRQ(EXTI4_15_IRQn);
-		
-		// generate presense pulse (pull data line low)
-		GPIOA->BRR = 0x0600;			// clear port data output bits for PA9,10 to 0
-		GPIOA->MODER |= 0x00140000;		// configure PA9,10 as output		
-
-		ow_state = OW_ST_PRES_HOLD;
-
-		TIM3->CNT = 0;
-		TIM3->ARR = 80;				// setup timer to fire after 80 us
-		break;
-
-	case OW_ST_PRES_HOLD:
-		TIM3->CR1 &= ~TIM_CR1_CEN;	// stop timer counter
-
-		ow_bitCount = 0;
-		ow_writeEndState = OW_ST_WR_END;
-		ow_readSampleState = OW_ST_RD_SAMPLE;
-		owCmdState = OW_CMDST_ROM;
-
-		ow_state = OW_ST_PRES_HOLD_END;
-
-		//EXTI->RTSR &= ~0x00000400;	// disable rising edge
-		NVIC_EnableIRQ(EXTI4_15_IRQn);
-
-		// Release data line (completes presence pulse)
-		GPIOA->MODER &= ~0x00140000;	// configure PA9,10 as input
-
-		break;	
+		break;		
 	}
 }
 
@@ -659,91 +595,110 @@ stopRomSearch:
 // Triggers on falling edge and rising edge, depending on protocol state
 void EXTI4_15_IRQHandler(void)
 {
-	uint16_t ow_curr_usec, ow_diff_usec;
+	uint16_t ow_curr_usec;
+
+	// Falling edge of 1W detected
 	
-	if( (EXTI->IMR & EXTI_IMR_MR10) && (EXTI->PR & EXTI_PR_PR10))
-   	{
-		EXTI->PR |= EXTI_PR_PR10;	
+	switch (ow_state)
+	{
+	// Start of write timeslot detected
+	case OW_ST_WR_TIMESLOT:
+		// to send '0' force line low for the rest of timeslot
+		if (!(ow_curByte & 0x01))
+		{				
+			// pull the line low
+			GPIOA->BRR = 0x0600;			// clear port data output bits for PA9,10 to 0
+			GPIOA->MODER |= 0x00140000;		// configure PA9,10 as output
+		}
 
-		switch (ow_state)
+		TIM3->CNT = 0;
+		TIM3->ARR = 35;				// setup timer to fire after 30 us
+		TIM3->CR1 |= TIM_CR1_CEN;	// re-enable timer counter
+
+		// to send '1' allow the line to return high (by not doing anything)
+		ow_state = ow_writeEndState;
+		break;
+
+	// Start of read timeslot detected
+	case OW_ST_RD_TIMESLOT:
+		TIM3->CNT = 0;
+		TIM3->ARR = 30;				// setup timer to fire after 30 us
+		TIM3->CR1 |= TIM_CR1_CEN;	// re-enable timer counter
+		ow_state = ow_readSampleState;
+		break;
+
+	// Possible start of RESET
+	case OW_ST_IDLE:
+		// if 1W line is high already this isn't reset
+		if (GPIOA->IDR & 0x0400) break;
+
+		NVIC_DisableIRQ(TIM3_IRQn);
+		TIM3->CNT = 0;				// start from 0
+		TIM3->ARR = 960;			// this is maxium length of reset (1w low)
+		TIM3->SR = 0;				// initially clear status
+		TIM3->CR1 |= TIM_CR1_CEN;	// Start timer
+
+		while (!(TIM3->SR & 0x0001))	// while update event not happened
 		{
-		// Both falling and rising edge trigger in on
-		case OW_ST_IDLE:
-			ow_start_usec = TIM3->CNT;
-			// If OW line low, this could be start of reset
-			if (!(GPIOA->IDR & 0x0400))			
-				ow_state = OW_ST_RESET;					
-			
-			break;
-
-		case OW_ST_RESET:
-			ow_curr_usec = TIM3->CNT;
-			// data line high, possible reset completed
+			// if 1W high, possible end of reset
 			if (GPIOA->IDR & 0x0400)
-			{				
-				// reset detected ?
-				ow_diff_usec = (ow_curr_usec - ow_start_usec); 
-				if ((ow_diff_usec >= 480) && (ow_diff_usec < 960))
-				{					
-					ow_start_usec = ow_curr_usec;
-					ow_state = OW_ST_PRES_START;
+			{
+				ow_curr_usec = TIM3->CNT;
 
+				// stop timer counter
+				TIM3->CR1 &= ~TIM_CR1_CEN;
+
+				// if Reset pulse was between 480 and 960 us
+				if (ow_curr_usec >= 480)
+				{
 					// stop measurement in progress
 					opFlags = 0x00;
+		
+					// Valid reset detected
+					delayUs(30); // wait 30 us before generating presense pulse
+
+					// disable GPIO IRQ (to avoid falling edge trigger from our own pulse)
+					NVIC_DisableIRQ(EXTI4_15_IRQn);
+		
+					// generate presense pulse (pull data line low)
+					GPIOA->BRR = 0x0600;			// clear port data output bits for PA9,10 to 0
+					GPIOA->MODER |= 0x00140000;		// configure PA9,10 as output
+
+					delayUs(80); // presence pulse duration
+
+					ow_bitCount = 0;
+					ow_writeEndState = OW_ST_WR_END;
+					ow_readSampleState = OW_ST_RD_SAMPLE;
+					owCmdState = OW_CMDST_ROM;
+					ow_state = OW_ST_RD_TIMESLOT;
+
+					// enable timer update interrupt (timer itself is still stopped for now)
+					TIM3->SR = 0;
+					TIM3->ARR = 0;
+					TIM3->CNT = 0;
+					TIM3->DIER |= 0x0001;
+					NVIC_EnableIRQ(TIM3_IRQn);
 					
-					TIM3->CR1 &= ~TIM_CR1_CEN;	// stop timer counter				
-					TIM3->ARR = 30;				// set timer to generate event after 30 us
-					TIM3->DIER |= 0x0001;		// enable update interrupt
-					TIM3->CR1 |= TIM_CR1_CEN;	// re-enable timer counter
-					NVIC_EnableIRQ(TIM3_IRQn);	// enable timer interrupt
+					NVIC_EnableIRQ(EXTI4_15_IRQn);
+
+					// Release data line (completes presence pulse)
+					GPIOA->MODER &= ~0x00140000;	// configure PA9,10 as input					
 				}
-				else
-				{
-					ow_state = OW_ST_IDLE;
-					opFlags = F_MEASURMENT_ALLOWED;
-				}
+				
+				break;
 			}
-			else
-			{
-				ow_state = OW_ST_IDLE;
-				opFlags = F_MEASURMENT_ALLOWED;
-			}
-			break;
+		}			
 
-		// falling edge only was enabled in this state
-		// So start of read timeslot detected
-		case OW_ST_RD_TIMESLOT:
-			TIM3->CNT = 0;
-			TIM3->ARR = 30;				// setup timer to fire after 30 us
-			TIM3->CR1 |= TIM_CR1_CEN;	// re-enable timer counter
-			ow_state = ow_readSampleState;
-			break;
+		// timeout waiting for 1w high, reset too long
+		if (ow_state == OW_ST_IDLE)
+		{
+			// stop timer counter
+			TIM3->CR1 &= ~TIM_CR1_CEN;			
+		}
+		break;
+	}
 
-		// falling edge only was enabled in this state
-		// So start of write timeslot detected
-		case OW_ST_WR_TIMESLOT:
-			TIM3->CNT = 0;
-			TIM3->ARR = 35;				// setup timer to fire after 30 us
-			TIM3->CR1 |= TIM_CR1_CEN;	// re-enable timer counter
-
-			// to send '0' force line low for the rest of timeslot
-			if (!(ow_curByte & 0x01))
-			{				
-				// pull the line low
-				GPIOA->BRR = 0x0600;			// clear port data output bits for PA9,10 to 0
-				GPIOA->MODER |= 0x00140000;		// configure PA9,10 as output
-			}
-
-			// to send '1' allow the line to return high (by not doing anything)
-			ow_state = ow_writeEndState;
-			break;
-
-		case OW_ST_PRES_HOLD_END:			
-			EXTI->RTSR &= ~0x00000400;	// disable rising edge			
-			ow_state = OW_ST_RD_TIMESLOT;
-			break;
-		}		
-	}	
+	EXTI->PR |= EXTI_PR_PR10;	
 }
 
 // Configure ADC
@@ -1093,8 +1048,7 @@ int main(void)
 
 	// map PA10 to EXTI10 (SYSCFG_EXTICR3)
 	SYSCFG->EXTICR[2] &= ~0xfffff0ff;
-	// configure trigger on rising edge
-	EXTI->RTSR |= 0x00000400;
+	
 	// configure trigger on falling edge
 	EXTI->FTSR |= 0x00000400;
 	// unmask irq line 10
@@ -1111,7 +1065,9 @@ int main(void)
     while(1)
     {
     	if (!(opFlags & F_MEASURMENT_ALLOWED))
+    	{			
 			continue;
+    	}
 
 		if (!(opFlags & F_MEASURMENT_RUNNING))
 		{
