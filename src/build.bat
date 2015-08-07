@@ -1,6 +1,6 @@
 echo "Cleaning before build..."
 del /Q *.o
-del /Q*.elf
+del /Q *.elf
 del /Q bin_output\*.*
 echo "Building DKST-90..."
 
